@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>demo1</title>
+</head>
+<body>
+    <div id="app">
+        <input type="text" v-model="msg">
+        <p>{{ msg }}</p>
+        <ul>
+            <li>1</li>
+            <li>{{msg}}</li>
+            <li>{{test}}</li>
+        </ul>
+    </div>
+
+    <script src="../dist/bundle.js"></script>
+
+    <script>
+        let vm = new Tue({
+            el: 'app',
+            data: {
+                msg: '单向绑定的模式',
+                test: '测试键'
+            }
+        });
+    </script>
+</body>
+</html>

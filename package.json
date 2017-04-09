@@ -1,0 +1,12 @@
+{
+    "name": "tue",
+    "version": "0.0.1",
+    "description": "this is an imitation vue in order to learn vue.",
+    "author": "chenziyun <ever-lose@foxmail.com>",
+    "scripts": {
+        "build": "webpack"
+    },
+    "dependencies": {
+        "lodash": "3.10.1"
+    }
+}
