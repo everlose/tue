@@ -12,7 +12,11 @@ function Watcher(vm, node, name){
 Watcher.prototype = {
     update () {
         this.get();
-        this.node.nodeValue = this.value;
+        if (this.node.nodeName === 'INPUT') {
+            this.node.value = this.value;
+        } else {
+            this.node.nodeValue = this.value;
+        }
     },
     get () {
         //这里访问了vm的属性，触发了getter，赋予了Dep.target值

@@ -2,7 +2,7 @@
 function Dep () {
     //所与之联系的订阅者数组
     this.subs = [];
-    //为了方便getter的时候塞入subs里
+    //理解成全局变量，由于需要在闭包内添加watcher，所以通过Dep定义一个全局target属性，暂存watcher, 添加完移除。
     this.target = null;
 }
 Dep.prototype = {
