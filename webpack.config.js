@@ -4,7 +4,15 @@ module.exports = {
     output: {
         filename: './dist/bundle.js'
     },
-    // externals: {
-    //     "lodash": "lodash"
-    // }
+    devServer: {
+        contentBase: "./demo/",
+        colors: true,
+        historyApiFallback: true,
+        inline: true,
+        port: '8097',
+        //自动打开浏览器
+        open: {
+            type: true
+        }
+    }
 };

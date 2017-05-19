@@ -44,11 +44,10 @@
 /* 0 */
 /***/ function(module, exports, __webpack_require__) {
 
-	//var _ = require('lodash');
 	var nodeToFragment = __webpack_require__(1);
 	var observer = __webpack_require__(4);
 
-	window.Vue = function (options) {
+	window.Tue = function (options) {
 	    this.id = options.el;
 	    this.data = options.data;
 	    observer(this.data, this);
@@ -66,6 +65,7 @@
 	const hasChildNode = (node) => {
 	    return node.childNodes.length === 0 ? false : node;
 	}
+
 	//用文档片段来劫持dom结构，进行dom解析完后重新渲染
 	const nodeToFragment = (node, vm) => {
 	    let frag = document.createDocumentFragment();
@@ -113,6 +113,7 @@
 	    }
 	}
 
+	//渲染解析DOM的函数
 	module.exports = nodeToFragment;
 
 
@@ -134,7 +135,11 @@
 	Watcher.prototype = {
 	    update () {
 	        this.get();
-	        this.node.nodeValue = this.value;
+	        if (this.node.nodeName === 'INPUT') {
+	            this.node.value = this.value;
+	        } else {
+	            this.node.nodeValue = this.value;
+	        }
 	    },
 	    get () {
 	        //这里访问了vm的属性，触发了getter，赋予了Dep.target值
@@ -153,7 +158,7 @@
 	function Dep () {
 	    //所与之联系的订阅者数组
 	    this.subs = [];
-	    //为了方便getter的时候塞入subs里
+	    //理解成全局变量，由于需要在闭包内添加watcher，所以通过Dep定义一个全局target属性，暂存watcher, 添加完移除。
 	    this.target = null;
 	}
 	Dep.prototype = {
@@ -206,6 +211,7 @@
 	    });
 	};
 
+	//监听器函数
 	module.exports = observer;
 
 
