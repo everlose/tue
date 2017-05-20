@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>demo1</title>
+</head>
+<body>
+    <div id="app">
+        <input type="text" v-model="name.age.value" />
+        <input type="text" v-model="name.value" />
+        <button type="button" v-click="increment">increment</button>
+        <button type="button" v-click="alert">alert</button>
+
+        <p style="color: red;">1, {{name.value}}, {{name.age.value}}</p>
+    </div>
+
+    <script src="../dist/bundle.js"></script>
+
+    <script>
+        let vm = new Tue({
+            el: '#app',
+            data: {
+                count: 0,
+                name: {
+                    value: 'zhangsan',
+                    age: {
+                        value: 18
+                    }
+                }
+            },
+            methods: {
+                increment: function () {
+                    this.name.age.value++;
+                },
+                alert: function () {
+                    alert(this.name.value);
+                }
+            }
+        });
+    </script>
+</body>
+</html>

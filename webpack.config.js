@@ -4,6 +4,7 @@ module.exports = {
     output: {
         filename: './dist/bundle.js'
     },
+    devtool: 'cheap-module-source-map',
     devServer: {
         contentBase: "./demo/",
         colors: true,
