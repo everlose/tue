@@ -8,17 +8,21 @@ function Directive (name, el, vm, exp, attr) {
     this.vm = vm;  // 指令对应的vue实例
     this.exp = exp;  // 指令对应的表达式
     this.attr = attr;  // 绑定的属性值
-    // 如果是文本类型的节点需要存储初始值
-    this.originValue = this.attr === 'innerText' ? this.el.nodeValue : null;
+    //记录上一次的nodeValue值，只为了nodeValue而存在
+    this.lastValue = this.attr === 'nodeValue' ? `{{${exp}}}` : null;
     this.update(); // 第一次绑定时调用
 };
 Directive.prototype.update = function(){
-    if (this.attr === 'innerText') {
+    if (this.attr === 'nodeValue') {
         let value = this.vm.$data.$get(this.exp);
-        this.el.nodeValue = this.originValue.replace(/\{\{(.+?)\}\}/, value);
+        let nodeValue = this.el.nodeValue;
+        //为什么用replace，是为了避免`{{test}}, {{test2}}`这样一个文本节点里多个绑定属性的干扰。
+        this.el.nodeValue = nodeValue.replace(this.lastValue, value);
+        this.lastValue = value;
     } else {
         this.el[this.attr] = this.vm.$data.$get(this.exp);
     }
+    //this.el[this.attr] = this.vm.$data.$get(this.exp);
 };
 
 window.Tue = function (options) {
@@ -168,6 +172,7 @@ Tue.prototype._compile = function (node) {
             node.addEventListener('keyup', function (e) {
                 self.$data.$set(attrValue, e.target.value);
             });
+            node.removeAttribute('v-model');
         }
         //  绑定的点击事件指令
         if (node.hasAttribute('v-click')) {
@@ -188,19 +193,21 @@ Tue.prototype._compile = function (node) {
             node.addEventListener('click', function () {
                 self.$methods[methodName].apply(self.$data, args);
             });
+            node.removeAttribute('v-click');
         }
-        // 手动绑定的方式。就是innerText操作
-        // if (node.hasAttribute('v-bind')) {
-        //     var attrValue = node.getAttribute('v-bind');
-        //     // 将innerText更新的指令加进去
-        //     self._binding[attrValue]._directives.push(new Directive(
-        //         'text',
-        //         node,
-        //         self,
-        //         attrValue,
-        //         'innerText'
-        //     ));
-        // }
+        //手动绑定的方式。就是innerText操作
+        if (node.hasAttribute('v-bind')) {
+            var attrValue = node.getAttribute('v-bind');
+            // 将innerText更新的指令加进去
+            self._binding[attrValue]._directives.push(new Directive(
+                'text',
+                node,
+                self,
+                attrValue,
+                'innerText'
+            ));
+            node.removeAttribute('v-bind');
+        }
 
     }
 
@@ -217,7 +224,7 @@ Tue.prototype._compile = function (node) {
                 node,
                 self,
                 attrValue,
-                'innerText'
+                'nodeValue'
             ));
         }
     }
