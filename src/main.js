@@ -12,17 +12,17 @@ function Directive (name, el, vm, exp, attr) {
     this.lastValue = this.attr === 'nodeValue' ? `{{${exp}}}` : null;
     this.update(); // 第一次绑定时调用
 };
-Directive.prototype.update = function(){
+Directive.prototype.update = function () {
     if (this.attr === 'nodeValue') {
-        let value = this.vm.$data.$get(this.exp);
+        let value = this.vm.$get(this.vm.$data, this.exp);
         let nodeValue = this.el.nodeValue;
         //为什么用replace，是为了避免`{{test}}, {{test2}}`这样一个文本节点里多个绑定属性的干扰。
         this.el.nodeValue = nodeValue.replace(this.lastValue, value);
         this.lastValue = value;
     } else {
-        this.el[this.attr] = this.vm.$data.$get(this.exp);
+        this.el[this.attr] = this.vm.$get(this.vm.$data, this.exp);
     }
-    //this.el[this.attr] = this.vm.$data.$get(this.exp);
+    //this.el[this.attr] = this.$get(this.vm.$data, this.exp);
 };
 
 window.Tue = function (options) {
@@ -39,15 +39,15 @@ Tue.prototype._init = function (options) {
     this.$data = options.data;
     this.$methods = options.methods;
 
-    // 对象深沉次属性的取值和修改,同时这两个方法可以直接this.vm.$data.$set(xxx)来搞
-    Object.prototype.$get = function(keyPath){
+    // 对象深沉次属性的取值和修改,同时这两个方法可以这么使用this.$get(this.vm.$data, xxx)
+    this.$get = function (obj, keyPath) {
         var getter = new Function('return this.' + keyPath);
-        return getter.call(this);
+        return getter.call(obj);
     };
 
-    Object.prototype.$set = function(keyPath, val){
+    this.$set = function (obj, keyPath, val) {
         var setter = new Function('newVal', 'this.' + keyPath + ' = newVal');
-        setter.call(this, val);
+        setter.call(obj, val);
     };
 
     // 用于存储与dom绑定的数据属性
@@ -97,14 +97,14 @@ originPath: 要劫持的属性在其对象中的具体路径
 type: 为0代表obj[key]是对象，为1则代表具体数据
 */
 Tue.prototype.convert = function (obj, key, value, originPath, type) {
-    var binding = this._binding[originPath];
+    let binding = this._binding[originPath];
     // 当前属性的值是具体原始值的话则直接劫持并触发指令更新
     if (type === 1) {
         Object.defineProperty(obj, key, {
             get: function(){
                 return value;
             },
-            // 新值改变会触发对应的指令集合执行对应的更新，这里遍历了整个指令集合，性能差。
+            // 新值改变会触发对应的指令集合执行对应的更新，这里遍历了整个指令集合重新渲染。
             set: function(newVal){
                 if (value !== newVal) {
                     value = newVal;
@@ -117,7 +117,7 @@ Tue.prototype.convert = function (obj, key, value, originPath, type) {
         });
     } else {
         // 当前属性的值是对象的话则还需进一步判断新值
-        var subObj = obj[key] || {};
+        let subObj = obj[key] || {};
         Object.defineProperty(obj, key, {
             get: function(){
                 return value;
@@ -170,23 +170,33 @@ Tue.prototype._compile = function (node) {
                 'value'
             ));
             node.addEventListener('keyup', function (e) {
-                self.$data.$set(attrValue, e.target.value);
+                self.$set(self.$data, attrValue, e.target.value);
             });
             node.removeAttribute('v-model');
         }
         //  绑定的点击事件指令
         if (node.hasAttribute('v-click')) {
-            var attrValue = node.getAttribute('v-click');
-            var methodName = attrValue;
+            let attrValue = node.getAttribute('v-click');
+            let methodName = attrValue; //初始化设置方法名
             /*
              *  /\(.*\)/.exec("num('adf','sdf')");
              *  ["('adf','sdf')"]
              */
-            var args = /\(.*\)/.exec(attrValue);
+            let args = /\(.*\)/.exec(attrValue);
             if (args) {
-                args = args[0];
+                let arg = args[0];
+                //如果有参数存在的话，需要处理一下得到真正的方法名。
                 methodName = attrValue.replace(args, '');
-                args = args.replace(/[\(\)\'\"]/g, '').split(',');
+                //处理参数的过程，目前只区分字符串和数字作为参数
+                args = arg.replace(/[\(\)]/g, '').split(',');
+                args = args.map(function (v) {
+                    if (/\'\"/.test(v)) {
+                        v = v.toString();
+                    } else {
+                        v = +v;
+                    }
+                    return v;
+                });
             } else {
                 args = [];
             }

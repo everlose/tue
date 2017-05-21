@@ -8,10 +8,10 @@
     <div id="app">
         <input type="text" v-model="name.age.value" />
         <input type="text" v-model="name.value" />
-        <button type="button" v-click="increment">increment</button>
+        <button type="button" v-click="increment(2)">increment</button>
         <button type="button" v-click="alert">alert</button>
 
-        <p v-bind="name.age.value"></p>
+        <p>{{name.age.value}}</p>
         <p>{{name.value}}</p>
         <p style="color: red;">1, {{name.value}}, {{name.age.value}}</p>
     </div>
@@ -31,8 +31,9 @@
                 }
             },
             methods: {
-                increment: function () {
-                    this.name.age.value++;
+                increment: function (value) {
+                    value = value ? value : 1;
+                    this.name.age.value += value;
                 },
                 alert: function () {
                     alert(this.name.value);
