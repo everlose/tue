@@ -1,72 +1,80 @@
-var Dep = require('./dep');
+/* 劫持具体属性
+obj: 劫持的对象
+key: 要劫持的对象的属性名
+value: 要劫持的对象的属性值
+originPath: 要劫持的属性在其对象中的具体路径
+type: 为0代表obj[key]是对象，为1则代表具体数据
+*/
+var convert = function (vm, obj, key, value, originPath, type) {
+    let binding = vm._binding[originPath];
+    // 当前属性的值是具体原始值的话则直接劫持并触发指令更新
+    if (type === 1) {
+        Object.defineProperty(obj, key, {
+            get: function(){
+                return value;
+            },
+            // 新值改变会触发对应的指令集合执行对应的更新，这里遍历了整个指令集合重新渲染。
+            set: function(newVal){
+                if (value !== newVal) {
+                    value = newVal;
+                    // 遍历执行指令集合。
+                    binding._directives.forEach(function (item) {
+                        item.update();
+                    });
+                }
+            }
+        });
+    } else {
+        // 当前属性的值是对象的话则还需进一步判断新值
+        let subObj = obj[key] || {};
+        Object.defineProperty(obj, key, {
+            get: function(){
+                return value;
+            },
+            set: function(newVal){
+                if (typeof newVal === 'object') {
+                    for(var subKey in newVal){
+                        subObj[subKey] = newVal[subKey];
+                    }
+                } else {
+                    subObj = newVal;
+                    binding._directives.forEach(function(item){
+                        item.update();
+                    });
+                }
+            }
+        });
+    }
+};
 
-//监听者（利用setter监听view => model 的数据变化  发出通知更改model数据后再从model＝> view更新视图所有用到的地方）
-var observer = function (data, vm) {
-    // 遍历劫持data下面的所有的属性
-    walk(data, vm);
-    // Object.keys(data).forEach((key) => {
-    //     defineReactive(vm, key, data[key]);
-    // });
-}
+/* 遍历data中的属性，给每个属性都定一个指令集，并存在_binding中。
+目的很简单：就是为了后面有更新操作的时候，可以直接遍历指令集执行里面的update方法。
+据data对应属性的值的类型来做了一个判断，如果是值本事还是对象的话就直接递归一次。
+如果不是就直接调用convert劫持属性了。
+obj: 当前正在遍历的对象，从Tue.$data开始逐级深入。
+keyPath: 遍历到的层级名称，字符串。
+*/
 
-// 监听者（利用setter监听view => model 的数据变化  发出通知更改model数据后再从model＝> view更新视图所有用到的地方）
-// var Observer = function (data, vm) {
-//     this.data = data;
-//     this.vm = vm;
-//     //遍历劫持data下面的所有的属性，并逐个劫持
-//     this.walk(data);
-// }
-
-// //遍历对象上的所有属性
-// Observer.prototype.walk = function(obj){
-//     for (var key in obj) {
-//         // 这里用hasOwnProperty是因为要过滤非该对象的属性
-//         if (obj.hasOwnProperty(key)) {
-//             let val = obj[key];
-//             if (typeof val === 'object') {
-//                 new Observer(val, this.vm);
-//             } else {
-//                 defineReactive(this.vm, key, val);
-//             }
-//         }
-//     }
-// }
-
-var walk = function(obj, vm){
+var observer = function (obj, keyPath) {
+    var vm = this;
+    var OBJECT = 0, DATA = 1;
+    var value;
+    var keyPath = keyPath || '';
     for (var key in obj) {
-        // 这里用hasOwnProperty是因为要过滤非该对象的属性
         if (obj.hasOwnProperty(key)) {
-            let val = obj[key];
-            if (typeof val === 'object') {
-                walk(val, vm);
+            // 加入某属性与其对应的指令
+            vm._binding[keyPath + key] = {
+                _directives: []
+            };
+            value = obj[key];
+            if (typeof value === 'object') {
+                convert(vm, obj, key, value, keyPath + key, OBJECT);
+                vm._observer(value, keyPath + key + '.');
             } else {
-                defineReactive(vm, key, val);
+                convert(vm, obj, key, value, keyPath + key, DATA);
             }
         }
     }
 };
-//属性劫持封装
-var defineReactive = function (vm, key, val) {
-    // 新建通知者
-    let dep = new Dep();
-    // 利用setter 和 getter 访问器来对属性的值监听
-    Object.defineProperty(vm, key, {
-        get: () => {
-            if (Dep.target) {
-                dep.addSub(Dep.target);
-            }
-            return val;
-        },
-        set: (newVal) => {
-            if (val === newVal) {
-                return;
-            }
-            val = newVal;
-            vm.data[key] = val;
-            dep.notify();
-        }
-    });
-};
 
-//监听器函数
 module.exports = observer;

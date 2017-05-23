@@ -2,9 +2,9 @@
 module.exports = {
     entry: './src/main.js',
     output: {
-        filename: './dist/bundle.js'
+        filename: './dist/tue.js'
     },
-    devtool: 'cheap-module-source-map',
+    devtool: 'source-map',
     devServer: {
         contentBase: "./demo/",
         colors: true,
