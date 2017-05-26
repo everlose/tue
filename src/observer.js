@@ -48,7 +48,7 @@ var convert = function (vm, obj, key, value, originPath, type) {
 };
 
 // 数组原生的方法列表截取属性
-var arrMethods = function () {
+var arrMethods = function (vm, originPath) {
     const arrMethods = ['push','pop','shift','unshift','splice','sort','reverse'];
     const arrayAugmentations = [];
 
@@ -57,9 +57,13 @@ var arrMethods = function () {
         let originalMethod = Array.prototype[method];
 
         // 将原生数组的一些基本方法定义在arrayAugmentations的属性上；注意直接是属性上，并不是什么原型的属性
-        arrayAugmentations[method] = function(){
+        arrayAugmentations[method] = function () {
             console.log('我是被改变了的');
-            console.log('我自己定义的数组方法位置');
+            // 遍历执行指令集合。
+            var binding = vm._binding[originPath];
+            binding._directives.forEach(function (item) {
+                item.update();
+            });
             // 调用原生的数组方法，并且返回结果。
             return originalMethod.apply(this, arguments);
         };
@@ -81,7 +85,6 @@ var observer = function (obj, keyPath) {
     var OBJECT = 0, DATA = 1, ARRAY = 2;
     var value;
     var keyPath = keyPath || '';
-    var arrayAugmentations = arrMethods();
     for (var key in obj) {
         if (obj.hasOwnProperty(key)) {
             // 加入某属性与其对应的指令
@@ -94,7 +97,7 @@ var observer = function (obj, keyPath) {
                 vm._observer(value, keyPath + key + '.');
             } else if (Object.prototype.toString.call(value)  === '[object Array]') {
                 convert(vm, obj, key, value, keyPath + key, ARRAY);
-                vm.$get(vm.$data, keyPath + key).__proto__ = arrayAugmentations;
+                vm.$get(vm.$data, keyPath + key).__proto__ = arrMethods(vm, keyPath + key);
             } else if (Object.prototype.toString.call(value)  === '[object String]') {
                 convert(vm, obj, key, value, keyPath + key, DATA);
             }

@@ -63,6 +63,19 @@ var compile = function (vm, node) {
             ));
             node.removeAttribute('v-bind');
         }
+        //循环
+        if (node.hasAttribute('v-for')) {
+            var attrValue = node.getAttribute('v-for');
+            // 将innerText更新的指令加进去
+            self._binding[attrValue]._directives.push(new Directive(
+                'text',
+                node,
+                self,
+                attrValue,
+                'innerText'
+            ));
+            node.removeAttribute('v-for');
+        }
 
     }
 
