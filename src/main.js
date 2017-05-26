@@ -2,15 +2,19 @@ var observer = require('./observer');
 var compile = require('./compile');
 
 
-window.Tue = function (options) {
-    this._init(options);
+window.Tue = function (opts) {
+    this._init(opts);
 };
 
-Tue.prototype._init = function (options) {
-    this.$options = options;
-    this.$el = document.querySelector(options.el);
-    this.$data = options.data;
-    this.$methods = options.methods;
+Tue.prototype._init = function (opts) {
+    this.$opts = opts;
+    this.$el = typeof opts.el === 'string' ? document.querySelector(opts.el) : opts.el;
+    this.$data = opts.data;
+    this.$methods = opts.methods;
+
+    if (Object.prototype.toString.call(opts.data) === '[object Function]') {
+        this.$data = opts.data();
+    }
 
     // 对象深沉次属性的取值和修改,同时这两个方法可以这么使用this.$get(this.vm.$data, xxx)
     this.$get = function (obj, keyPath) {
